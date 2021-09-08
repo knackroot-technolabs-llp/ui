@@ -86,6 +86,7 @@ export class ENS {
     this.decentraNameContract = {};
     this.decentraControllerContract = {};
     this.rootRegistrarContract = {};
+    this.rootRegistrarControllerContract = {};
 
     const ENSContract = getENSContract({ address: registryAddress, provider })
     this.ENS = ENSContract
@@ -101,6 +102,10 @@ export class ENS {
 
   setRootRegistrarContract(instance) {
     this.rootRegistrarContract = instance;
+  }
+  
+  setRootRegistrarControllerContract(instance) {
+    this.rootRegistrarControllerContract = instance;
   }
 
   /* Get the raw Ethers contract object */

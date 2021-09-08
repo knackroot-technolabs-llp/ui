@@ -102,12 +102,20 @@ export default class Registrar {
 
     const ENS = getENSContract({ address: registryAddress, provider })
 
-    this.permanentRegistrar = permanentRegistrar
-    this.permanentRegistrarController = permanentRegistrarController
+    this.permanentRegistrar = {}
+    this.permanentRegistrarController = {}
     // this.legacyAuctionRegistrar = legacyAuctionRegistrar
     this.registryAddress = registryAddress
     // this.bulkRenewal = bulkRenewal
     this.ENS = ENS
+  }
+
+  setRootRegistrarContractInstance(contractInstance) {
+    this.permanentRegistrar = contractInstance;
+  }
+
+  setRootRegistrarControllerContractInstance(contractInstance) {
+    this.permanentRegistrarController = contractInstance;
   }
 
   // async getAddress(name) {
@@ -161,7 +169,7 @@ export default class Registrar {
       permanentRegistrar: Registrar,
       permanentRegistrarController: RegistrarController
     } = this
-
+    
     let getAvailable
     let ret = {
       available: null,
@@ -241,7 +249,7 @@ export default class Registrar {
     }
 
     return {
-      ...legacyEntry,
+      // ...legacyEntry,
       ...ret
     }
   }
