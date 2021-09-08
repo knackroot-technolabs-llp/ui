@@ -2,15 +2,15 @@
 import DNSRegistrarJS from './dnsregistrar'
 import {
   getENSContract,
-  getResolverContract,
-  getPermanentRegistrarContract,
-  getDnsRegistrarContract,
-  getOldDnsRegistrarContract,
-  getPermanentRegistrarControllerContract,
-  getLegacyAuctionContract,
-  getDeedContract,
-  getTestRegistrarContract,
-  getBulkRenewalContract
+  // getResolverContract,
+  // getPermanentRegistrarContract,
+  // getDnsRegistrarContract,
+  // getOldDnsRegistrarContract,
+  // getPermanentRegistrarControllerContract,
+  // getLegacyAuctionContract,
+  // getDeedContract,
+  // getTestRegistrarContract,
+  // getBulkRenewalContract
 } from './contracts'
 
 import {
@@ -43,16 +43,16 @@ const transferGasCost = 21000
 
 function checkArguments({
   registryAddress,
-  ethAddress,
-  legacyAuctionRegistrarAddress,
+  // ethAddress,
+  // legacyAuctionRegistrarAddress,
   provider
 }) {
   if (!registryAddress) throw 'No registry address given to Registrar class'
 
-  if (!legacyAuctionRegistrarAddress)
-    throw 'No legacy auction address given to Registrar class'
+  // if (!legacyAuctionRegistrarAddress)
+  //   throw 'No legacy auction address given to Registrar class'
 
-  if (!ethAddress) throw 'No .eth address given to Registrar class'
+  // if (!ethAddress) throw 'No .eth address given to Registrar class'
 
   if (!provider) throw 'Provider is required for Registrar'
 
@@ -68,92 +68,93 @@ function getBufferedPrice(price){
 export default class Registrar {
   constructor({
     registryAddress,
-    ethAddress,
-    legacyAuctionRegistrarAddress,
-    controllerAddress,
-    bulkRenewalAddress,
+    // ethAddress,
+    // legacyAuctionRegistrarAddress,
+    // controllerAddress,
+    // bulkRenewalAddress,
     provider
   }) {
     checkArguments({
       registryAddress,
-      ethAddress,
-      legacyAuctionRegistrarAddress,
+      // ethAddress,
+      // legacyAuctionRegistrarAddress,
       provider
     })
 
-    const permanentRegistrar = getPermanentRegistrarContract({
-      address: ethAddress,
-      provider
-    })
-    const permanentRegistrarController = getPermanentRegistrarControllerContract(
-      { address: controllerAddress, provider }
-    )
+    // const permanentRegistrar = getPermanentRegistrarContract({
+    //   address: ethAddress,
+    //   provider
+    // })
+    
+    // const permanentRegistrarController = getPermanentRegistrarControllerContract(
+    //   { address: controllerAddress, provider }
+    // )
 
-    const legacyAuctionRegistrar = getLegacyAuctionContract({
-      address: legacyAuctionRegistrarAddress,
-      provider
-    })
+    // const legacyAuctionRegistrar = getLegacyAuctionContract({
+    //   address: legacyAuctionRegistrarAddress,
+    //   provider
+    // })
 
-    const bulkRenewal = getBulkRenewalContract({
-      address: bulkRenewalAddress,
-      provider
-    })
+    // const bulkRenewal = getBulkRenewalContract({
+    //   address: bulkRenewalAddress,
+    //   provider
+    // })
 
     const ENS = getENSContract({ address: registryAddress, provider })
 
     this.permanentRegistrar = permanentRegistrar
     this.permanentRegistrarController = permanentRegistrarController
-    this.legacyAuctionRegistrar = legacyAuctionRegistrar
+    // this.legacyAuctionRegistrar = legacyAuctionRegistrar
     this.registryAddress = registryAddress
-    this.bulkRenewal = bulkRenewal
+    // this.bulkRenewal = bulkRenewal
     this.ENS = ENS
   }
 
-  async getAddress(name) {
-    const provider = await getProvider()
-    const hash = namehash(name)
-    const resolverAddr = await this.ENS.resolver(hash)
-    const Resolver = getResolverContract({ address: resolverAddr, provider })
-    return Resolver['addr(bytes32)'](hash)
-  }
+  // async getAddress(name) {
+  //   const provider = await getProvider()
+  //   const hash = namehash(name)
+  //   const resolverAddr = await this.ENS.resolver(hash)
+  //   const Resolver = getResolverContract({ address: resolverAddr, provider })
+  //   return Resolver['addr(bytes32)'](hash)
+  // }
 
-  async getDeed(address) {
-    const provider = await getProvider()
-    return getDeedContract({ address, provider })
-  }
+  // async getDeed(address) {
+  //   const provider = await getProvider()
+  //   return getDeedContract({ address, provider })
+  // }
 
-  async getLegacyEntry(label) {
-    let legacyEntry
-    try {
-      const Registrar = this.legacyAuctionRegistrar
-      let deedOwner = '0x0'
-      const entry = await Registrar.entries(labelhash(label))
-      if (parseInt(entry[1], 16) !== 0) {
-        const deed = await this.getDeed(entry[1])
-        deedOwner = await deed.owner()
-      }
-      legacyEntry = {
-        deedOwner, // TODO: Display "Release" button if deedOwner is not 0x0
-        state: parseInt(entry[0]),
-        registrationDate: parseInt(entry[2]) * 1000,
-        revealDate: (parseInt(entry[2]) - 24 * 2 * 60 * 60) * 1000,
-        value: parseInt(entry[3]),
-        highestBid: parseInt(entry[4])
-      }
-    } catch (e) {
-      legacyEntry = {
-        deedOwner: '0x0',
-        state: 0,
-        registrationDate: 0,
-        revealDate: 0,
-        value: 0,
-        highestBid: 0,
-        expiryTime: 0,
-        error: e.message
-      }
-    }
-    return legacyEntry
-  }
+  // async getLegacyEntry(label) {
+  //   let legacyEntry
+  //   try {
+  //     const Registrar = this.legacyAuctionRegistrar
+  //     let deedOwner = '0x0'
+  //     const entry = await Registrar.entries(labelhash(label))
+  //     if (parseInt(entry[1], 16) !== 0) {
+  //       const deed = await this.getDeed(entry[1])
+  //       deedOwner = await deed.owner()
+  //     }
+  //     legacyEntry = {
+  //       deedOwner, // TODO: Display "Release" button if deedOwner is not 0x0
+  //       state: parseInt(entry[0]),
+  //       registrationDate: parseInt(entry[2]) * 1000,
+  //       revealDate: (parseInt(entry[2]) - 24 * 2 * 60 * 60) * 1000,
+  //       value: parseInt(entry[3]),
+  //       highestBid: parseInt(entry[4])
+  //     }
+  //   } catch (e) {
+  //     legacyEntry = {
+  //       deedOwner: '0x0',
+  //       state: 0,
+  //       registrationDate: 0,
+  //       revealDate: 0,
+  //       value: 0,
+  //       highestBid: 0,
+  //       expiryTime: 0,
+  //       error: e.message
+  //     }
+  //   }
+  //   return legacyEntry
+  // }
 
   async getPermanentEntry(label) {
     const {
@@ -200,9 +201,13 @@ export default class Registrar {
   }
 
   async getEntry(label) {
-    let [block, legacyEntry, permEntry] = await Promise.all([
+    let [
+      block,
+      // legacyEntry,
+      permEntry
+    ] = await Promise.all([
       getBlock(),
-      this.getLegacyEntry(label),
+      // this.getLegacyEntry(label),
       this.getPermanentEntry(label)
     ])
 
@@ -276,31 +281,31 @@ export default class Registrar {
     }
   }
 
-  async reclaim(name, address, overrides = {}) {
-    try {
-      const nameArray = name.split('.')
-      const labelHash = labelhash(nameArray[0])
-      const permanentRegistrar = this.permanentRegistrar
-      const signer = await getSigner()
-      const Registrar = permanentRegistrar.connect(signer)
-      const networkId = await getNetworkId()
-      if (parseInt(networkId) > 1000) {
-        /* if private network */
-        const gas = await Registrar.estimateGas.reclaim(labelHash, address)
+  // async reclaim(name, address, overrides = {}) {
+  //   try {
+  //     const nameArray = name.split('.')
+  //     const labelHash = labelhash(nameArray[0])
+  //     const permanentRegistrar = this.permanentRegistrar
+  //     const signer = await getSigner()
+  //     const Registrar = permanentRegistrar.connect(signer)
+  //     const networkId = await getNetworkId()
+  //     if (parseInt(networkId) > 1000) {
+  //       /* if private network */
+  //       const gas = await Registrar.estimateGas.reclaim(labelHash, address)
 
-        overrides = {
-          ...overrides,
-          gasLimit: gas.toNumber() * 2
-        }
-      }
+  //       overrides = {
+  //         ...overrides,
+  //         gasLimit: gas.toNumber() * 2
+  //       }
+  //     }
 
-      return Registrar.reclaim(labelHash, address, {
-        ...overrides
-      })
-    } catch (e) {
-      console.log('Error calling reclaim', e)
-    }
-  }
+  //     return Registrar.reclaim(labelHash, address, {
+  //       ...overrides
+  //     })
+  //   } catch (e) {
+  //     console.log('Error calling reclaim', e)
+  //   }
+  // }
 
   async getRentPrice(name, duration) {
     const permanentRegistrarController = this.permanentRegistrarController
@@ -335,7 +340,7 @@ export default class Registrar {
       signer
     )
     const account = await getAccount()
-    const resolverAddr = await this.getAddress('resolver.eth')
+    // const resolverAddr = await this.getAddress('resolver.eth')
     if (parseInt(resolverAddr, 16) === 0) {
       return permanentRegistrarController.makeCommitment(name, owner, secret)
     } else {
@@ -446,133 +451,133 @@ export default class Registrar {
     }
   }
 
-  async renew(label, duration) {
-    const permanentRegistrarControllerWithoutSigner = this
-      .permanentRegistrarController
-    const signer = await getSigner()
-    const permanentRegistrarController = permanentRegistrarControllerWithoutSigner.connect(
-      signer
-    )
-    const price = await this.getRentPrice(label, duration)
-    const priceWithBuffer = getBufferedPrice(price)
-    const gasLimit = await this.estimateGasLimit(() => {
-      return permanentRegistrarController.estimateGas.renew(label, duration, { value:priceWithBuffer})
-    })
-    return permanentRegistrarController.renew(label, duration, { value: priceWithBuffer, gasLimit })
-  }
+  // async renew(label, duration) {
+  //   const permanentRegistrarControllerWithoutSigner = this
+  //     .permanentRegistrarController
+  //   const signer = await getSigner()
+  //   const permanentRegistrarController = permanentRegistrarControllerWithoutSigner.connect(
+  //     signer
+  //   )
+  //   const price = await this.getRentPrice(label, duration)
+  //   const priceWithBuffer = getBufferedPrice(price)
+  //   const gasLimit = await this.estimateGasLimit(() => {
+  //     return permanentRegistrarController.estimateGas.renew(label, duration, { value:priceWithBuffer})
+  //   })
+  //   return permanentRegistrarController.renew(label, duration, { value: priceWithBuffer, gasLimit })
+  // }
 
-  async renewAll(labels, duration) {
-    const bulkRenewalWithoutSigner = this
-      .bulkRenewal
-    const signer = await getSigner()
-    const bulkRenewal = bulkRenewalWithoutSigner.connect(
-      signer
-    )
-    const prices = await this.getRentPrices(labels, duration)
-    const pricesWithBuffer = getBufferedPrice(prices)
-    const gasLimit = await this.estimateGasLimit(() => {
-      return bulkRenewal.estimateGas.renewAll(labels, duration, { value:pricesWithBuffer})
-    })
-    return bulkRenewal.renewAll(
-      labels,
-      duration,
-      { value: pricesWithBuffer, gasLimit }
-    )
-  }
+  // async renewAll(labels, duration) {
+  //   const bulkRenewalWithoutSigner = this
+  //     .bulkRenewal
+  //   const signer = await getSigner()
+  //   const bulkRenewal = bulkRenewalWithoutSigner.connect(
+  //     signer
+  //   )
+  //   const prices = await this.getRentPrices(labels, duration)
+  //   const pricesWithBuffer = getBufferedPrice(prices)
+  //   const gasLimit = await this.estimateGasLimit(() => {
+  //     return bulkRenewal.estimateGas.renewAll(labels, duration, { value:pricesWithBuffer})
+  //   })
+  //   return bulkRenewal.renewAll(
+  //     labels,
+  //     duration,
+  //     { value: pricesWithBuffer, gasLimit }
+  //   )
+  // }
 
-  async releaseDeed(label) {
-    const legacyAuctionRegistrar = this.legacyAuctionRegistrar
-    const signer = await getSigner()
-    const legacyAuctionRegistrarWithSigner = legacyAuctionRegistrar.connect(
-      signer
-    )
-    const hash = labelhash(label)
-    return legacyAuctionRegistrarWithSigner.releaseDeed(hash)
-  }
+  // async releaseDeed(label) {
+  //   const legacyAuctionRegistrar = this.legacyAuctionRegistrar
+  //   const signer = await getSigner()
+  //   const legacyAuctionRegistrarWithSigner = legacyAuctionRegistrar.connect(
+  //     signer
+  //   )
+  //   const hash = labelhash(label)
+  //   return legacyAuctionRegistrarWithSigner.releaseDeed(hash)
+  // }
 
-  async isDNSRegistrar(parentOwner) {
-    const provider = await getProvider()
-    const registrar = await getDnsRegistrarContract({ parentOwner, provider })
-    let isDNSSECSupported = false, isOld = false, isNew = false
-    try {
-      isOld = await registrar['supportsInterface(bytes4)'](dnssecClaimOldId)
-      isNew = await registrar['supportsInterface(bytes4)'](dnssecClaimNewId)
-    } catch (e) {
-      console.log({e})
-    }
-    isDNSSECSupported = isOld || isNew
-    return isDNSSECSupported
-  }
+  // async isDNSRegistrar(parentOwner) {
+  //   const provider = await getProvider()
+  //   const registrar = await getDnsRegistrarContract({ parentOwner, provider })
+  //   let isDNSSECSupported = false, isOld = false, isNew = false
+  //   try {
+  //     isOld = await registrar['supportsInterface(bytes4)'](dnssecClaimOldId)
+  //     isNew = await registrar['supportsInterface(bytes4)'](dnssecClaimNewId)
+  //   } catch (e) {
+  //     console.log({e})
+  //   }
+  //   isDNSSECSupported = isOld || isNew
+  //   return isDNSSECSupported
+  // }
 
-  async selectDnsRegistrarContract({parentOwner, provider}){
-    let registrarContract = await getOldDnsRegistrarContract({parentOwner, provider})
-    let isOld = false, isNew = false
-    try {
-      isOld = await registrarContract['supportsInterface(bytes4)'](dnssecClaimOldId)
-      if(!isOld){
-        registrarContract = await getDnsRegistrarContract({parentOwner, provider})
-        isNew = await registrarContract['supportsInterface(bytes4)'](dnssecClaimNewId)
-      }
-    } catch (e) {
-      console.log({e})
-    }
-    return({registrarContract, isOld})
-  }
+  // async selectDnsRegistrarContract({parentOwner, provider}){
+  //   let registrarContract = await getOldDnsRegistrarContract({parentOwner, provider})
+  //   let isOld = false, isNew = false
+  //   try {
+  //     isOld = await registrarContract['supportsInterface(bytes4)'](dnssecClaimOldId)
+  //     if(!isOld){
+  //       registrarContract = await getDnsRegistrarContract({parentOwner, provider})
+  //       isNew = await registrarContract['supportsInterface(bytes4)'](dnssecClaimNewId)
+  //     }
+  //   } catch (e) {
+  //     console.log({e})
+  //   }
+  //   return({registrarContract, isOld})
+  // }
 
-  async getDNSEntry(name, parentOwner, owner) {
-    // Do not cache as it needs to be refetched on "Refresh"
-    const dnsRegistrar = {stateError:null}
-    const web3Provider = getLegacyProvider()
-    const provider = await getProvider()
-    const { isOld, registrarContract } = await this.selectDnsRegistrarContract({parentOwner, provider})
-    const oracleAddress = await registrarContract.oracle()
-    const registrarjs = new DNSRegistrarJS(web3Provider.givenProvider, oracleAddress, isOld)
-    try {
-      const claim = await registrarjs.claim(name)
-      const result = claim.getResult()
-      dnsRegistrar.claim = claim
-      dnsRegistrar.result = result
-      if (claim && claim.isFound) {
-        dnsRegistrar.dnsOwner = claim.getOwner()
-        if (!dnsRegistrar.dnsOwner || parseInt(dnsRegistrar.dnsOwner) === 0) {
-          // Empty
-          dnsRegistrar.state = 8
-        } else if(!utils.isAddress(dnsRegistrar.dnsOwner)){
-          // Invalid record
-          dnsRegistrar.state = 4
-        } else if (
-          !owner || dnsRegistrar.dnsOwner.toLowerCase() === owner.toLowerCase()
-        ) {
-          // Ready to register
-          dnsRegistrar.state = 5
-        } else {
-          // Out of sync
-          dnsRegistrar.state = 6
-        }
-      } else {
-        if (claim && claim.nsec) {
-          if (result.results.length === 4) {
-            // DNS entry does not exist
-            dnsRegistrar.state = 1
-          } else if (result.results.length === 6) {
-            // DNS entry exists but _ens subdomain does not exist
-            dnsRegistrar.state = 3
-          } else {
-            throw `DNSSEC results cannot be ${result.results.length}`
-          }
-        } else {
-          // DNSSEC is not enabled
-          dnsRegistrar.state = 2
-        }
-      }
-    } catch (e) {
-      console.log('Problem fetching data from DNS', e)
-      // Problem fetching data from DNS
-      dnsRegistrar.stateError = e.message
-      dnsRegistrar.state = 0
-    }
-    return dnsRegistrar
-  }
+  // async getDNSEntry(name, parentOwner, owner) {
+  //   // Do not cache as it needs to be refetched on "Refresh"
+  //   const dnsRegistrar = {stateError:null}
+  //   const web3Provider = getLegacyProvider()
+  //   const provider = await getProvider()
+  //   const { isOld, registrarContract } = await this.selectDnsRegistrarContract({parentOwner, provider})
+  //   const oracleAddress = await registrarContract.oracle()
+  //   const registrarjs = new DNSRegistrarJS(web3Provider.givenProvider, oracleAddress, isOld)
+  //   try {
+  //     const claim = await registrarjs.claim(name)
+  //     const result = claim.getResult()
+  //     dnsRegistrar.claim = claim
+  //     dnsRegistrar.result = result
+  //     if (claim && claim.isFound) {
+  //       dnsRegistrar.dnsOwner = claim.getOwner()
+  //       if (!dnsRegistrar.dnsOwner || parseInt(dnsRegistrar.dnsOwner) === 0) {
+  //         // Empty
+  //         dnsRegistrar.state = 8
+  //       } else if(!utils.isAddress(dnsRegistrar.dnsOwner)){
+  //         // Invalid record
+  //         dnsRegistrar.state = 4
+  //       } else if (
+  //         !owner || dnsRegistrar.dnsOwner.toLowerCase() === owner.toLowerCase()
+  //       ) {
+  //         // Ready to register
+  //         dnsRegistrar.state = 5
+  //       } else {
+  //         // Out of sync
+  //         dnsRegistrar.state = 6
+  //       }
+  //     } else {
+  //       if (claim && claim.nsec) {
+  //         if (result.results.length === 4) {
+  //           // DNS entry does not exist
+  //           dnsRegistrar.state = 1
+  //         } else if (result.results.length === 6) {
+  //           // DNS entry exists but _ens subdomain does not exist
+  //           dnsRegistrar.state = 3
+  //         } else {
+  //           throw `DNSSEC results cannot be ${result.results.length}`
+  //         }
+  //       } else {
+  //         // DNSSEC is not enabled
+  //         dnsRegistrar.state = 2
+  //       }
+  //     }
+  //   } catch (e) {
+  //     console.log('Problem fetching data from DNS', e)
+  //     // Problem fetching data from DNS
+  //     dnsRegistrar.stateError = e.message
+  //     dnsRegistrar.state = 0
+  //   }
+  //   return dnsRegistrar
+  // }
 
   async submitProof(name, parentOwner) {
     const provider = await getProvider()
@@ -600,68 +605,77 @@ export default class Registrar {
     }
   }
 
-  async registerTestdomain(label) {
-    const provider = await getProvider()
-    const testAddress = await this.ENS.owner(namehash('test'))
-    const registrarWithoutSigner = getTestRegistrarContract({
-      address: testAddress,
-      provider
-    })
-    const signer = await getSigner()
-    const hash = labelhash(label)
-    const account = await getAccount()
-    const registrar = registrarWithoutSigner.connect(signer)
-    return registrar.register(hash, account)
-  }
+  // async registerTestdomain(label) {
+  //   const provider = await getProvider()
+  //   const testAddress = await this.ENS.owner(namehash('test'))
+  //   const registrarWithoutSigner = getTestRegistrarContract({
+  //     address: testAddress,
+  //     provider
+  //   })
+  //   const signer = await getSigner()
+  //   const hash = labelhash(label)
+  //   const account = await getAccount()
+  //   const registrar = registrarWithoutSigner.connect(signer)
+  //   return registrar.register(hash, account)
+  // }
 
-  async expiryTimes(label) {
-    const provider = await getProvider()
-    const testAddress = await this.ENS.owner(namehash('test'))
-    const TestRegistrar = await getTestRegistrarContract({
-      address: testAddress,
-      provider
-    })
-    const hash = labelhash(label)
-    const result = await TestRegistrar.expiryTimes(hash)
-    if (result > 0) {
-      return new Date(result * 1000)
-    }
-  }
+  // async expiryTimes(label) {
+  //   const provider = await getProvider()
+  //   const testAddress = await this.ENS.owner(namehash('test'))
+  //   const TestRegistrar = await getTestRegistrarContract({
+  //     address: testAddress,
+  //     provider
+  //   })
+  //   const hash = labelhash(label)
+  //   const result = await TestRegistrar.expiryTimes(hash)
+  //   if (result > 0) {
+  //     return new Date(result * 1000)
+  //   }
+  // }
 }
 
-async function getEthResolver(ENS) {
-  const resolverAddr = await ENS.resolver(namehash('eth'))
-  const provider = await getProvider()
-  return getResolverContract({ address: resolverAddr, provider })
-}
+// async function getEthResolver(ENS) {
+//   const resolverAddr = await ENS.resolver(namehash('eth'))
+//   const provider = await getProvider()
+//   return getResolverContract({ address: resolverAddr, provider })
+// }
 
 export async function setupRegistrar(registryAddress) {
   const provider = await getProvider()
   const ENS = getENSContract({ address: registryAddress, provider })
-  const Resolver = await getEthResolver(ENS)
+  console.log("🚀 ~ file: registrar.js ~ line 641 ~ setupRegistrar ~ ENS", ENS)
+  try {
+  // const Resolver = await getEthResolver(ENS)
 
-  let ethAddress = await ENS.owner(namehash('eth'))
+  // let ethAddress = await ENS.owner(namehash('eth'))
 
-  let controllerAddress = await Resolver.interfaceImplementer(
-    namehash('eth'),
-    permanentRegistrarInterfaceId
-  )
-  let legacyAuctionRegistrarAddress = await Resolver.interfaceImplementer(
-    namehash('eth'),
-    legacyRegistrarInterfaceId
-  )
+  // let controllerAddress = await Resolver.interfaceImplementer(
+  //   namehash('eth'),
+  //   permanentRegistrarInterfaceId
+  // )
+    
+  // let legacyAuctionRegistrarAddress = await Resolver.interfaceImplementer(
+  //   namehash('eth'),
+  //   legacyRegistrarInterfaceId
+  // )
 
-  let bulkRenewalAddress = await Resolver.interfaceImplementer(
-    namehash('eth'),
-    bulkRenewalInterfaceId
-  )
+  // let bulkRenewalAddress = await Resolver.interfaceImplementer(
+  //   namehash('eth'),
+  //   bulkRenewalInterfaceId
+  // )
 
   return new Registrar({
     registryAddress,
-    legacyAuctionRegistrarAddress,
-    ethAddress,
-    controllerAddress,
-    bulkRenewalAddress,
+    // legacyAuctionRegistrarAddress,
+    // ethAddress,
+    // controllerAddress,
+    // bulkRenewalAddress,
     provider
   })
+  }
+  catch (error) {
+    console.log("🚀 ~ file: registrar.js ~ line 644 ~ setupRegistrar ~ error", error)
+    
+  }
+  
 }
