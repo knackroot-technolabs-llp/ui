@@ -2,7 +2,7 @@ import { Contract } from 'ethers'
 import {
   BaseRegistrarImplementation as permanentRegistrarContract,
   BulkRenewal as bulkRenewalContract,
-  ENS as ensContract,
+  ENSRegistry as ensContract,
   ETHRegistrarController as permanentRegistrarControllerContract,
   DNSRegistrar as dnsRegistrarContract,
   Resolver as resolverContract,
@@ -48,7 +48,7 @@ function getPermanentRegistrarContract({ address, provider }) {
 }
 
 function getPermanentRegistrarControllerContract({ address, provider }) {
-  return new Contract(address, permanentRegistrarControllerContract, provider)
+  return new Contract('', permanentRegistrarControllerContract, provider)
 }
 
 function getDeedContract({ address, provider }) {

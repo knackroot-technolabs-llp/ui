@@ -256,7 +256,7 @@ export default class Registrar {
 
   async getGracePeriod(Registrar) {
     if (!this.gracePeriod) {
-      this.gracePeriod = await Registrar.GRACE_PERIOD()
+      this.gracePeriod = await Registrar.GRACE_PERIOD();
       return this.gracePeriod
     }
     return this.gracePeriod
@@ -315,9 +315,9 @@ export default class Registrar {
   //   }
   // }
 
-  async getRentPrice(name, duration) {
-    const permanentRegistrarController = this.permanentRegistrarController
-    let price = await permanentRegistrarController.rentPrice(name, duration)
+  async getRentPrice(name, duration, isFeeInDWEBToken = false) {
+    const permanentRegistrarController = this.permanentRegistrarController;
+    let price = await permanentRegistrarController.rentPrice(name, duration, isFeeInDWEBToken);
     return price
   }
 
@@ -331,64 +331,96 @@ export default class Registrar {
   }
 
   async getMinimumCommitmentAge() {
-    const permanentRegistrarController = this.permanentRegistrarController
-    return permanentRegistrarController.minCommitmentAge()
-  }
-
-  async getMaximumCommitmentAge(){
-    const permanentRegistrarController = this.permanentRegistrarController
-    return  permanentRegistrarController.maxCommitmentAge()
-  }
-
-  async makeCommitment(name, owner, secret = '') {
-    const permanentRegistrarControllerWithoutSigner = this
-      .permanentRegistrarController
-    const signer = await getSigner()
-    const permanentRegistrarController = permanentRegistrarControllerWithoutSigner.connect(
-      signer
-    )
-    const account = await getAccount()
-    // const resolverAddr = await this.getAddress('resolver.eth')
-    if (parseInt(resolverAddr, 16) === 0) {
-      return permanentRegistrarController.makeCommitment(name, owner, secret)
-    } else {
-      return permanentRegistrarController.makeCommitmentWithConfig(
-        name,
-        owner,
-        secret,
-        resolverAddr,
-        account
-      )
+    try {
+      
+      const permanentRegistrarController = this.permanentRegistrarController;
+      return await permanentRegistrarController.minCommitmentAge()
+    }
+    catch (error) {
+      console.log("🚀 ~ file: registrar.js ~ line 338 ~ Registrar ~ getMinimumCommitmentAge ~ error", error)
     }
   }
 
-  async checkCommitment(label, secret = '') {
-    const permanentRegistrarControllerWithoutSigner = this
+  async getMaximumCommitmentAge() {
+    try {
+      
+      const permanentRegistrarController = this.permanentRegistrarController;
+      return  await permanentRegistrarController.maxCommitmentAge()
+    }
+    catch (error) {
+      console.log("🚀 ~ file: registrar.js ~ line 349 ~ Registrar ~ getMaximumCommitmentAge ~ error", error)
+    }
+  }
+
+  async makeCommitment(name, owner, secret = '') {
+    try {
+      const permanentRegistrarControllerWithoutSigner = this
       .permanentRegistrarController
-    const signer = await getSigner()
-    const permanentRegistrarController = permanentRegistrarControllerWithoutSigner.connect(
-      signer
-    )
-    const account = await getAccount()
-    const commitment = await this.makeCommitment(label, account, secret)
-    return await permanentRegistrarController.commitments(commitment)
+      const signer = await getSigner()
+      const permanentRegistrarController = permanentRegistrarControllerWithoutSigner.connect(
+        signer
+      )
+      const account = await getAccount()
+      // const resolverAddr = await this.getAddress('resolver.eth')
+      // if (parseInt(resolverAddr, 16) === 0) {
+      //   return permanentRegistrarController.makeCommitment(name, owner, secret)
+      // } else {
+        return permanentRegistrarController.makeCommitment(
+          name,
+          owner,
+          secret,
+          // resolverAddr,
+          // account
+        )
+      // }
+    }
+    catch (error) {
+      console.log("🚀 ~ file: registrar.js ~ line 348 ~ Registrar ~ makeCommitment ~ error", error)
+    }
+
+  }
+
+  async checkCommitment(label, secret = '') {
+    try {
+      const permanentRegistrarControllerWithoutSigner = this
+      .permanentRegistrarController
+      const signer = await getSigner()
+      const permanentRegistrarController = permanentRegistrarControllerWithoutSigner.connect(
+        signer
+      )
+      const account = await getAccount()
+      const commitment = await this.makeCommitment(label, account, secret)
+      const result = await permanentRegistrarController.commitments(commitment);
+
+      return result;
+    }
+    catch (error) {
+      console.log("🚀 ~ file: registrar.js ~ line 376 ~ Registrar ~ checkCommitment ~ error", error)
+    }
   }
 
   async commit(label, secret = '') {
-    const permanentRegistrarControllerWithoutSigner = this
+    try {
+      const permanentRegistrarControllerWithoutSigner = this
       .permanentRegistrarController
-    const signer = await getSigner()
-    const permanentRegistrarController = permanentRegistrarControllerWithoutSigner.connect(
-      signer
-    )
-    const account = await getAccount()
-    const commitment = await this.makeCommitment(label, account, secret)
-
-    return permanentRegistrarController.commit(commitment)
+      const signer = await getSigner()
+      const permanentRegistrarController = permanentRegistrarControllerWithoutSigner.connect(
+        signer
+      )
+      const account = await getAccount()
+      const commitment = await this.makeCommitment(label, account, secret)
+      // TODO : v,r,s handle
+      return permanentRegistrarController.commit(commitment, 27, utils.formatBytes32String(''), utils.formatBytes32String(''))
+    }
+    catch (error) {
+      console.log("🚀 ~ file: registrar.js ~ line 415 ~ Registrar ~ commit ~ error", error)
+    }
+    
   }
 
-  async register(label, duration, secret) {
-    const permanentRegistrarControllerWithoutSigner = this
+  async register(label, duration, secret, isFeeInDWEBToken= false) {
+    try{
+      const permanentRegistrarControllerWithoutSigner = this
       .permanentRegistrarController
     const signer = await getSigner()
     const permanentRegistrarController = permanentRegistrarControllerWithoutSigner.connect(
@@ -397,48 +429,79 @@ export default class Registrar {
     const account = await getAccount()
     const price = await this.getRentPrice(label, duration)
     const priceWithBuffer = getBufferedPrice(price)
-    const resolverAddr = await this.getAddress('resolver.eth')
-    if (parseInt(resolverAddr, 16) === 0) {
-      const gasLimit = await this.estimateGasLimit(() => {
-        return permanentRegistrarController.estimateGas.register(
-          label,
-          account,
-          duration,
-          secret,
-          { value:priceWithBuffer}
-        )
-      })
+    // const resolverAddr = await this.getAddress('resolver.eth')
+    // if (parseInt(resolverAddr, 16) === 0) {
+    //   const gasLimit = await this.estimateGasLimit(() => {
+    //     return permanentRegistrarController.estimateGas.register(
+    //       label,
+    //       account,
+    //       duration,
+    //       secret,
+    //       { value:priceWithBuffer}
+    //     )
+    //   })
   
-      return permanentRegistrarController.register(
-        label,
-        account,
-        duration,
-        secret,
-        { value: priceWithBuffer, gasLimit }
-      )
-    } else {
-      const gasLimit = await this.estimateGasLimit(() => {
-        return permanentRegistrarController.estimateGas.registerWithConfig(
+    //   return permanentRegistrarController.register(
+    //     label,
+    //     account,
+    //     duration,
+    //     secret,
+    //     { value: priceWithBuffer, gasLimit }
+    //   )
+    // } else {
+      if (isFeeInDWEBToken) {
+        const gasLimit = await this.estimateGasLimit(() => {
+          return permanentRegistrarController.estimateGas.register(
+            label,
+            account,
+            duration,
+            secret,
+            true,
+            price
+          )
+        })
+  
+        return permanentRegistrarController.register(
           label,
           account,
           duration,
           secret,
-          resolverAddr,
-          account,
-          { value:priceWithBuffer}
+          true,
+          price,
+          {gasLimit}
         )
-      })
+      }
+      else {
+        const gasLimit = await this.estimateGasLimit(() => {
+          return permanentRegistrarController.estimateGas.register(
+            label,
+            account,
+            duration,
+            secret,
+            false,
+            price,
+            { value: priceWithBuffer}
+          )
+        })
+  
+        return permanentRegistrarController.register(
+          label,
+          account,
+          duration,
+          secret,
+          false,
+          price,
+          { value: priceWithBuffer, gasLimit }
+        )
+      }
+      
+    // }
 
-      return permanentRegistrarController.registerWithConfig(
-        label,
-        account,
-        duration,
-        secret,
-        resolverAddr,
-        account,
-        { value: priceWithBuffer, gasLimit }
-      )
     }
+    catch (error) {
+      console.log("🚀 ~ file: registrar.js ~ line 407 ~ Registrar ~ register ~ error", error)
+    }
+
   }
 
   async estimateGasLimit( cb ){
@@ -588,28 +651,33 @@ export default class Registrar {
   // }
 
   async submitProof(name, parentOwner) {
-    const provider = await getProvider()
-    const { claim, result } = await this.getDNSEntry(name, parentOwner)
-    const owner = claim.getOwner()
-    const { registrarContract:registrarWithoutSigner, isOld } = await this.selectDnsRegistrarContract({parentOwner, provider})
+    try {
+      const provider = await getProvider()
+      const { claim, result } = await this.getDNSEntry(name, parentOwner)
+      const owner = claim.getOwner()
+      const { registrarContract:registrarWithoutSigner, isOld } = await this.selectDnsRegistrarContract({parentOwner, provider})
 
-    const signer = await getSigner()
-    const user = await signer.getAddress()
-    const registrar = registrarWithoutSigner.connect(signer)
-    const proofData = await claim.getProofData()
-    const data = isOld ? proofData.data : proofData.rrsets
-    const proof = proofData.proof
-    
-    if(data.length === 0){
-      return registrar.claim(claim.encodedName, proof)
-    }else{
-      // Only available for the new DNSRegistrar
-      if(!isOld && (owner === user)){
-        const resolverAddress = await this.getAddress('resolver.eth')
-        return registrar.proveAndClaimWithResolver(claim.encodedName, data, proof, resolverAddress, owner);
+      const signer = await getSigner()
+      const user = await signer.getAddress()
+      const registrar = registrarWithoutSigner.connect(signer)
+      const proofData = await claim.getProofData()
+      const data = isOld ? proofData.data : proofData.rrsets
+      const proof = proofData.proof
+      
+      if(data.length === 0){
+        return registrar.claim(claim.encodedName, proof)
       }else{
-        return registrar.proveAndClaim(claim.encodedName, data, proof)
+        // Only available for the new DNSRegistrar
+        // if(!isOld && (owner === user)){
+        //   const resolverAddress = await this.getAddress('resolver.eth')
+        //   return registrar.proveAndClaimWithResolver(claim.encodedName, data, proof, resolverAddress, owner);
+        // }else{
+          return registrar.proveAndClaim(claim.encodedName, data, proof)
+        // }
       }
+    }
+    catch (error) {
+      console.log("🚀 ~ file: registrar.js ~ line 658 ~ Registrar ~ submitProof ~ error", error)
     }
   }
 
@@ -651,7 +719,6 @@ export default class Registrar {
 export async function setupRegistrar(registryAddress) {
   const provider = await getProvider()
   const ENS = getENSContract({ address: registryAddress, provider })
-  console.log("🚀 ~ file: registrar.js ~ line 641 ~ setupRegistrar ~ ENS", ENS)
   try {
   // const Resolver = await getEthResolver(ENS)
 

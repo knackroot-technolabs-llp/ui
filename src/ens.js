@@ -10,10 +10,8 @@ import {
 import { normalize } from 'eth-ens-namehash'
 import { formatsByName } from '@ensdomains/address-encoder'
 import { abi as ensContract } from '@ensdomains/contracts/abis/ens/ENS.json'
-import { constants } from 'ethers'
-
+import { constants, Wallet } from 'ethers'
 import { decryptHashes } from './preimage'
-
 import {
   uniq,
   getEnsStartBlock,
@@ -39,6 +37,7 @@ import {
   encodeContenthash,
   decodeContenthash
 } from './utils/contents'
+import Web3 from 'web3'
 
 /* Utils */
 
@@ -96,6 +95,10 @@ export class ENS {
     this.decentraNameContract = instance;
   }
 
+  setENSRegistryContract(instance) {
+    this.ENS = instance;
+  }
+
   setDecentraControllerContract(instance) {
     this.decentraControllerContract = instance;
   }
@@ -103,7 +106,7 @@ export class ENS {
   setRootRegistrarContract(instance) {
     this.rootRegistrarContract = instance;
   }
-  
+
   setRootRegistrarControllerContract(instance) {
     this.rootRegistrarControllerContract = instance;
   }
@@ -118,14 +121,14 @@ export class ENS {
   async getOwner(name) {
     try {
       const namehash = getNamehash(name)
-      const owner = await this.decentraControllerContract.ownerOf(namehash);
+      const owner = await this.ENS.owner(namehash);
       return owner;
     }
     catch (error) {
       console.log("🚀 ~ file: ens.js ~ line 118 ~ ENS ~ getOwner ~ error", error)
       return constants.AddressZero;
     }
-    
+
   }
 
   async getResolver(name) {
@@ -337,34 +340,40 @@ export class ENS {
   // }
 
   async getSubdomains(name) {
-    const startBlock = await getEnsStartBlock()
-    const namehash = getNamehash(name)
-    const rawLogs = await this.getENSEvent('NewOwner', {
-      topics: [namehash],
-      fromBlock: startBlock
-    })
-    const flattenedLogs = rawLogs.map(log => log.values)
-    flattenedLogs.reverse()
-    const logs = uniq(flattenedLogs, 'label')
-    const labelhashes = logs.map(log => log.label)
-    const remoteLabels = await decryptHashes(...labelhashes)
-    const localLabels = checkLabels(...labelhashes)
-    const labels = mergeLabels(localLabels, remoteLabels)
-    const ownerPromises = labels.map(label => this.getOwner(`${label}.${name}`))
-
-    return Promise.all(ownerPromises).then(owners =>
-      owners.map((owner, index) => {
-        return {
-          label: labels[index],
-          labelhash: logs[index].label,
-          decrypted: labels[index] !== null,
-          node: name,
-          name: `${labels[index] ||
-            encodeLabelhash(logs[index].label)}.${name}`,
-          owner
-        }
+    try {
+      const startBlock = await getEnsStartBlock()
+      const namehash = getNamehash(name)
+      const rawLogs = await this.getENSEvent('NewOwner', {
+        topics: [namehash],
+        fromBlock: startBlock
       })
-    )
+      const flattenedLogs = rawLogs.map(log => log.args)
+      flattenedLogs.reverse()
+      const logs = uniq(flattenedLogs, 'label')
+      const labelhashes = logs.map(log => log.label)
+      const remoteLabels = await decryptHashes(...labelhashes)
+      const localLabels = checkLabels(...labelhashes)
+      const labels = mergeLabels(localLabels, remoteLabels)
+      const ownerPromises = labels.map(label => this.getOwner(`${label}.${name}`))
+
+      return Promise.all(ownerPromises).then(owners =>
+        owners.map((owner, index) => {
+          return {
+            label: labels[index],
+            labelhash: logs[index].label,
+            decrypted: labels[index] !== null,
+            node: name,
+            name: `${labels[index] ||
+              encodeLabelhash(logs[index].label)}.${name}`,
+            owner
+          }
+        })
+      )
+    }
+    catch (error) {
+      console.log("🚀 ~ file: ens.js ~ line 344 ~ ENS ~ getSubdomains ~ error", error)
+    }
+
   }
 
   async getDomainDetails(name) {
@@ -400,24 +409,146 @@ export class ENS {
 
   /* non-constant functions */
 
+  async getVRS(msgParams) {
+    
+    const provider = await getWeb3();
+
+    var from = await getAccount();
+
+    console.log('CLICKED, SENDING PERSONAL SIGN REQ', 'from', from, msgParams, provider)
+    var params = [from, msgParams]
+    console.dir(params)
+    var method = 'eth_signTypedData_v3'
+    const web3 = new Web3(provider.provider);
+    const result = await web3.currentProvider.send({
+      method,
+      params,
+      from,
+    }, async function (err, result) {
+      return new Promise((resolve, reject) => {
+        
+        if (err) {
+          return reject(err);
+        } 
+        if (result.error) {
+          console.log(result.error.message)
+        }
+        if (result.error) {
+          return reject(result)
+        } 
+        console.log('TYPED SIGNED:' + JSON.stringify(result.result))
+
+        const signature = result.result.substring(2);
+        const r = "0x" + signature.substring(0, 64);
+        const s = "0x" + signature.substring(64, 128);
+        const v = parseInt(signature.substring(128, 130), 16);
+        resolve({ v, r, s });
+      })
+    });
+    console.log("🚀 ~ file: ens.js ~ line 479 ~ ENS ~ getVRS ~ result", result)
+    return result;
+  }
+
   async setOwner(name, newOwner) {
-    const ENSWithoutSigner = this.ENS
-    const signer = await getSigner()
-    const ENS = ENSWithoutSigner.connect(signer)
-    const namehash = getNamehash(name)
-    return ENS.setOwner(namehash, newOwner)
+    try {
+      const namehash = getNamehash(name);
+
+      const msgParams = JSON.stringify({
+        types: {
+          EIP712Domain: [
+            { name: "name", type: "string" },
+            { name: "version", type: "string" },
+            { name: "chainId", type: "uint256" },
+            { name: "verifyingContract", type: "address" }
+          ],
+          transferToken: [
+            { name: "transferTo", type: "address" },
+            { name: "id", type: "uint256" }
+          ]
+        },
+        primaryType: "transferToken",
+        domain: {
+          name: "decentraname",
+          version: "1",
+          chainId: 4,
+          verifyingContract: this.decentraControllerContract.address
+        },
+        message: {
+          transferTo: newOwner,
+          id: namehash
+        }
+      })
+      const result = await this.getVRS(msgParams);
+      const { v, r, s } = result;
+      const ENSWithoutSigner = this.ENS
+      const signer = await getSigner()
+      const ENS = ENSWithoutSigner.connect(signer)
+      return ENS.setOwner(namehash, newOwner, v, r, s)  
+    }
+    catch (error) {
+      console.log("🚀 ~ file: ens.js ~ line 479 ~ ENS ~ setOwner ~ error", error)
+    }
   }
 
   async setSubnodeOwner(name, newOwner) {
-    const ENSWithoutSigner = this.ENS
-    const signer = await getSigner()
-    const ENS = ENSWithoutSigner.connect(signer)
-    const nameArray = name.split('.')
-    const label = nameArray[0]
-    const node = nameArray.slice(1).join('.')
-    const labelhash = getLabelhash(label)
-    const parentNamehash = getNamehash(node)
-    return ENS.setSubnodeOwner(parentNamehash, labelhash, newOwner)
+    try {
+
+      const nameArray = name.split('.')
+      const label = nameArray[0]
+      const node = nameArray.slice(1).join('.')
+      const labelhash = getLabelhash(label)
+      const parentNamehash = getNamehash(node)
+
+      const msgParams = JSON.stringify({
+        types: {
+          EIP712Domain: [
+            { name: "name", type: "string" },
+            { name: "version", type: "string" },
+            { name: "chainId", type: "uint256" },
+            { name: "verifyingContract", type: "address" }
+          ],
+          transferToken: [
+            { name: "transferTo", type: "address" },
+            { name: "id", type: "uint256" }
+          ]
+        },
+        primaryType: "transferToken",
+        domain: {
+          name: "decentraname",
+          version: "1",
+          chainId: 4,
+          verifyingContract: this.decentraControllerContract.address
+        },
+        message: {
+          transferTo: newOwner,
+          id: getNamehash(name)
+        }
+      })
+
+      const result = await this.getVRS(msgParams);
+      const { v, r, s } = result;
+
+      const ENSWithoutSigner = this.ENS
+      const signer = await getSigner()
+      const ENS = ENSWithoutSigner.connect(signer)
+      
+      return ENS.setSubnodeOwner(parentNamehash, labelhash, newOwner, v, r, s)
+    }
+    catch (error) {
+      console.log("🚀 ~ file: ens.js ~ line 429 ~ ENS ~ setSubnodeOwner ~ error", error)
+    }
+  }
+
+  async approve(address) {
+    try {
+      const decentra = this.decentraNameContract
+      const signer = await getSigner()
+      const decentraSigned = decentra.connect(signer)
+      return decentraSigned.setApprovalForAll(address, true);
+    }
+    catch (error) {
+      console.log("🚀 ~ file: ens.js ~ line 429 ~ ENS ~ setSubnodeOwner ~ error", error)
+    }
   }
 
   async setSubnodeRecord(name, newOwner, resolver) {
@@ -548,10 +679,26 @@ export class ENS {
   // }
 
   async createSubdomain(name) {
-    const account = await getAccount()
-    const publicResolverAddress = await this.getAddress('resolver.eth')
     try {
-      return this.setSubnodeRecord(name, account, publicResolverAddress)
+      const account = await getAccount();
+      const split = name.split('.');
+      const label = split[0];
+      const parent = name.substring(name.indexOf('.') + 1)
+      // namehash.hash(parent), '0x' + sha3(namehash.normalize(label)), owner
+      let ensRegistry = this.ENS;
+      const signer = await getSigner();
+      ensRegistry = ensRegistry.connect(
+        signer
+      )
+      console.log(
+        "🚀 ~ file: ens.js ~ line 597 ~ ENS ~ createSubdomain ~ label",
+        getNamehash(parent),
+        utils.keccak256(utils.toUtf8Bytes(normalize(label))),
+        normalize(label),
+        utils.toUtf8Bytes(normalize(label))
+      )
+
+      return ensRegistry.createSubnode(getNamehash(parent), utils.keccak256(utils.toUtf8Bytes(normalize(label))), account)
     } catch (e) {
       console.log('error creating subdomain', e)
     }
@@ -605,25 +752,32 @@ export class ENS {
   // Events
 
   async getENSEvent(event, { topics, fromBlock }) {
-    const provider = await getWeb3()
-    const { ENS } = this
-    const ensInterface = new utils.Interface(ensContract)
-    let Event = ENS.filters[event]()
+    try {
+      const provider = await getWeb3()
+      const { ENS } = this
+      const ensInterface = new utils.Interface(ensContract)
+      let Event = ENS.filters[event]()
 
-    const filter = {
-      fromBlock,
-      toBlock: 'latest',
-      address: Event.address,
-      topics: [...Event.topics, ...topics]
+      const filter = {
+        fromBlock,
+        toBlock: 'latest',
+        address: Event.address,
+        topics: [...Event.topics, ...topics]
+      }
+
+      const logs = await provider.getLogs(filter)
+
+      const parsed = logs.map(log => {
+        const parsedLog = ensInterface.parseLog(log)
+        return parsedLog
+      })
+
+      return parsed
+    }
+    catch (error) {
+      console.log("🚀 ~ file: ens.js ~ line 631 ~ ENS ~ getENSEvent ~ error", error)
+
     }
 
-    const logs = await provider.getLogs(filter)
-
-    const parsed = logs.map(log => {
-      const parsedLog = ensInterface.parseLog(log)
-      return parsedLog
-    })
-
-    return parsed
   }
 }
